@@ -1,16 +1,7 @@
-from helpers import Detector
-from threading import Thread
-from time import sleep
-
-detector = Detector()
-
-def printPoints():
-    while True:
-      print(detector.points)
-      sleep(1000)
-
-pointsThread =Thread(target=printPoints)
+from helpers import RoboflowDetect
 
 
-detector.runInThread()
-pointsThread.start()
+
+detector = RoboflowDetect("qk4dwKKWRvkQXaPghmHn","augmented-startups","weeds-nxe1w","http://192.168.1.110:9001/")
+
+detector.detect()
