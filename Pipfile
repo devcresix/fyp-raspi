@@ -12,6 +12,7 @@ pigpio = "*"
 serial = "*"
 asyncio = "*"
 websockets = "*"
+flask = "*"
 
 [dev-packages]
 

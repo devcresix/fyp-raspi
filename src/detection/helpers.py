@@ -1,34 +1,47 @@
+import sys
+
 import cv2
 import numpy as np
 import base64
 from roboflow import Roboflow
+import os
+import shutil
+import time
+
+
+
 
 class RoboflowDetect:
     def __init__(self,api_key,workspace,project,base_url):
+
+        self.__marginalConfidence = 0.5
+        self.__uploadFrequency = 20
+        self.__lastSavedTime = time.time()
+        self.__marginalXOffset = 10
+        self.__marginalYOffset = 10
         
         rf = Roboflow(api_key=api_key)
-        self.version = rf.workspace(workspace).project(project).version(1)
-        self.version.model.base_url=base_url
-        self.video = cv2.VideoCapture(0)
-        self.ROBOFLOW_SIZE=416
-    
-    def infer(self):
+        self.__version = rf.workspace(workspace).project(project).version(1)
+        self.__project = rf.workspace("fyp-af9kj").project("weeds-hwlcd")
+        #self.__project.image_upload_url = base_url
+        #self.__version.model.base_url=base_url
+        self.__video = cv2.VideoCapture(0)
+        self.__ROBOFLOW_SIZE=416
+
+    def capture(self):
         # Get the current image from the webcam
-        ret, img = self.video.read()
+        ret, img = self.__video.read()
 
         # Resize (while maintaining the aspect ratio) to improve speed and save bandwidth
         height, width, channels = img.shape
-        scale = self.ROBOFLOW_SIZE / max(height, width)
+        scale = self.__ROBOFLOW_SIZE / max(height, width)
         img = cv2.resize(img, (round(scale * width), round(scale * height)))
         cv2.imwrite("image.jpg",img)
 
-        # Encode image to base64 string
-        retval, buffer = cv2.imencode('.jpg', img)
-        img_str = base64.b64encode(buffer)
-
+    def infer(self,image):
         # Get prediction from Roboflow Infer API
-        prediction= self.version.model.predict("image.jpg")
-        print(prediction)
+        predictions= self.__version.model.predict(image)    
+        return predictions
         # Parse result image
         #image = np.asarray(bytearray(resp.read()), dtype="uint8")
         #image = cv2.imdecode(image, cv2.IMREAD_COLOR)
@@ -40,15 +53,65 @@ class RoboflowDetect:
             # On "q" keypress, exit
             if(cv2.waitKey(1) == ord('q')):
                 break
+            
+            #self.capture();
 
             # Synchronously get a prediction from the Roboflow Infer API
-            self.infer()
-            # And display the inference results
+            pred = self.getLoc("shred.png")
+
+            try:
+                xLoc = pred["x"]
+                yLoc = pred["y"]
+                height = pred["height"]
+                if(xLoc<180):
+                    print("Turn left")
+                elif(xLoc>236):
+                    print("Turn right")
+                else:
+                    print("Drive forward")
+                if(yLoc+height/2>=220):
+                    print("Shredding...")
+            except:
+                print("Drive Forward",time.time())
+           
+            try:
+                pass
+                #self.upload()
+            except:
+                pass
          
             #cv2.imshow('image', image)
            
         
         # Release resources when finished
-        self.video.release()
-        cv2.destroyAllWindows()
+        self.__video.release()
+    
+    def test():
+        pass
 
+    def upload(self):
+        imgList = os.listdir("./data/collected")
+        for image in imgList:
+            self.__project.upload("./data/collected/"+image)
+            os.remove("./data/collected/"+image)
+    
+    def saveImage(self,image):
+        shutil.move(image,"./data/collected/")
+        os.rename("./data/collected/image.jpg","./data/collected/"+str(round(time.time()*1000))+".jpg")
+
+    def getLoc(self,image):
+        predictions = self.infer(image)
+        conf = 0
+        if(len(predictions)>0):
+            predictions.save(output_path="predictions.jpg",stroke=2)
+            for prediction in predictions:
+                if(prediction["confidence"]>conf and prediction["confidence"]>=self.__marginalConfidence):
+                    #self.saveImage(image)
+                    #print(prediction)
+                    return prediction
+        else:
+            if(time.time()>self.__lastSavedTime+self.__uploadFrequency):
+                #self.saveImage(image)
+                self.__lastSavedTime = time.time()
+        
+        return {}
