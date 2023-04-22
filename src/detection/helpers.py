@@ -14,7 +14,7 @@ import serial
 
 class RoboflowDetect:
     def __init__(self,api_key,workspace,project,base_url):
-        self.serial_con = SerialCon("ttyUSB0")
+        self.serial_con = SerialCon("/dev/ttyUSB0")
         self.__marginalConfidence = 0.5
         self.__uploadFrequency = 20
         self.__lastSavedTime = time.time()
