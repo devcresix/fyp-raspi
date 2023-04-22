@@ -13,6 +13,7 @@ serial = "*"
 asyncio = "*"
 websockets = "*"
 flask = "*"
+roboflow = "*"
 
 [dev-packages]
 

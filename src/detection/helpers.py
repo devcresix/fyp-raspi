@@ -7,13 +7,14 @@ from roboflow import Roboflow
 import os
 import shutil
 import time
+import serial
 
 
 
 
 class RoboflowDetect:
     def __init__(self,api_key,workspace,project,base_url):
-
+        self.serial_con = SerialCon("ttyUSB0")
         self.__marginalConfidence = 0.5
         self.__uploadFrequency = 20
         self.__lastSavedTime = time.time()
@@ -54,10 +55,10 @@ class RoboflowDetect:
             if(cv2.waitKey(1) == ord('q')):
                 break
             
-            #self.capture();
+            self.capture();
 
             # Synchronously get a prediction from the Roboflow Infer API
-            pred = self.getLoc("shred.png")
+            pred = self.getLoc("image.jpg")
 
             try:
                 xLoc = pred["x"]
@@ -65,14 +66,19 @@ class RoboflowDetect:
                 height = pred["height"]
                 if(xLoc<180):
                     print("Turn left")
+                    self.serial_con.sendSignal(2)
                 elif(xLoc>236):
                     print("Turn right")
+                    self.serial_con.sendSignal(1)
                 else:
                     print("Drive forward")
+                    self.serial_con.sendSignal(0)
                 if(yLoc+height/2>=220):
                     print("Shredding...")
+                    self.serial_con.sendSignal(3)
             except:
                 print("Drive Forward",time.time())
+                self.serial_con.sendSignal(0)
            
             try:
                 pass
@@ -115,3 +121,11 @@ class RoboflowDetect:
                 self.__lastSavedTime = time.time()
         
         return {}
+
+
+class SerialCon:
+    def __init__(self,port):
+        self.boat = serial.Serial(port=port, baudrate=9600, timeout=.1)
+
+    def sendSignal(self,signal):
+        self.boat.write(bytes(signal, 'utf-8'))
