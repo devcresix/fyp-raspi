@@ -66,19 +66,19 @@ class RoboflowDetect:
                 height = pred["height"]
                 if(xLoc<180):
                     print("Turn left")
-                    self.serial_con.sendSignal(2)
+                    self.serial_con.sendSignal('2')
                 elif(xLoc>236):
                     print("Turn right")
-                    self.serial_con.sendSignal(1)
+                    self.serial_con.sendSignal('1')
                 else:
                     print("Drive forward")
-                    self.serial_con.sendSignal(0)
+                    self.serial_con.sendSignal('0')
                 if(yLoc+height/2>=220):
                     print("Shredding...")
-                    self.serial_con.sendSignal(3)
+                    self.serial_con.sendSignal('3')
             except:
                 print("Drive Forward",time.time())
-                self.serial_con.sendSignal(0)
+                self.serial_con.sendSignal('0')
            
             try:
                 pass
